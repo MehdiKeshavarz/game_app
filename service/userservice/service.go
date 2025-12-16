@@ -20,6 +20,10 @@ type RegisterRequest struct {
 	PhoneNumber string
 }
 
+func NewService(repo Repository) Service {
+	return Service{repo: repo}
+}
+
 type RegisterResponse struct {
 	entity.User
 }
