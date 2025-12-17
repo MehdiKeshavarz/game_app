@@ -36,3 +36,21 @@ func (d Mysqldb) Register(user entity.User) (entity.User, error) {
 
 	return user, nil
 }
+
+func (d Mysqldb) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error) {
+
+	row := d.db.QueryRow(`select * from users where phone_number = ? `, phoneNumber)
+	user := entity.User{}
+
+	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.User{}, false, nil
+		}
+
+		return entity.User{}, false, fmt.Errorf("can't scan query result: %w", err)
+	}
+
+	return user, true, nil
+
+}

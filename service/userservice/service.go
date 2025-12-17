@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	Register(user entity.User) (entity.User, error)
+	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
 }
 
 type Service struct {
@@ -81,7 +82,35 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	return RegisterResponse{createdUser}, nil
 }
 
-func hashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+type LoginRequest struct {
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
+}
 
+type LoginResponse struct{}
+
+func (s Service) Login(req LoginRequest) (LoginResponse, error) {
+	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+	if !exist {
+		return LoginResponse{}, fmt.Errorf("username or password is't correct")
+	}
+
+	// compare  user.password with the req.password
+
+	cErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if cErr != nil {
+		return LoginResponse{}, fmt.Errorf("username or password is't correct")
+	}
+
+	return LoginResponse{}, nil
+
+}
+
+func hashPassword(password string) (string, error) {
+	hashedPass, hErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+
+	return string(hashedPass), hErr
 }

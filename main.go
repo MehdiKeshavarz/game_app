@@ -13,6 +13,7 @@ import (
 func main() {
 
 	http.HandleFunc("/users/register", userRegisterHandler)
+	http.HandleFunc("/users/login", userLoginHandler)
 	http.HandleFunc("/health-check", healthCheckHandler)
 
 	err := http.ListenAndServe(":8080", nil)
@@ -56,6 +57,43 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	writer.Write([]byte(`{"message": "user registered"}`))
+}
+
+func userLoginHandler(writer http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		_, err := fmt.Fprintf(writer, `{"error": "invalid http method"'}`)
+		if err != nil {
+			return
+		}
+
+	}
+
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+	}
+	var uReq userservice.LoginRequest
+	uErr := json.Unmarshal(data, &uReq)
+
+	if uErr != nil {
+		_, wErr := writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, uErr.Error())))
+		if wErr != nil {
+			return
+		}
+	}
+
+	mysqlRepo := mysql.New()
+	userSvc := userservice.NewService(mysqlRepo)
+
+	_, rErr := userSvc.Login(uReq)
+
+	if rErr != nil {
+		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, rErr.Error())))
+
+		return
+	}
+
+	writer.Write([]byte(`{"message": "user login"}`))
 }
 
 func healthCheckHandler(writer http.ResponseWriter, req *http.Request) {
