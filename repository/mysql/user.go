@@ -11,7 +11,7 @@ func (d Mysqldb) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 	row := d.db.QueryRow(`select * from users where phone_number = ? `, phoneNumber)
 	user := entity.User{}
 
-	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber)
+	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.Password)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return true, nil
@@ -21,10 +21,11 @@ func (d Mysqldb) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 	}
 
 	return false, nil
+
 }
 
 func (d Mysqldb) Register(user entity.User) (entity.User, error) {
-	res, err := d.db.Exec(`insert into users(name, phone_number) values(?, ?)`, user.Name, user.PhoneNumber)
+	res, err := d.db.Exec(`insert into users(name, phone_number,password) values(?, ?, ?)`, user.Name, user.PhoneNumber, user.Password)
 	if err != nil {
 		return entity.User{}, fmt.Errorf("can't execute command: %w", err)
 	}

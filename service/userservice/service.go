@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"game_app/entity"
 	"game_app/pkg/phonenumber"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Repository interface {
@@ -18,6 +20,7 @@ type Service struct {
 type RegisterRequest struct {
 	Name        string `json:"name"`
 	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
 }
 
 func NewService(repo Repository) Service {
@@ -50,11 +53,23 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("name should be greater than 3 characters")
 	}
 
+	// 	TODO -check the password with regex pattern
+	// validate password
+	if len(req.Password) < 8 {
+		return RegisterResponse{}, fmt.Errorf("password should be greater than 8 characters")
+	}
+
+	hashedPassword, hErr := hashPassword(req.Password)
+	if hErr != nil {
+		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", hErr)
+	}
+
 	// create new user in storage
 	user := entity.User{
 		ID:          0,
 		Name:        req.Name,
 		PhoneNumber: req.PhoneNumber,
+		Password:    string(hashedPassword),
 	}
 
 	createdUser, err := s.repo.Register(user)
@@ -64,4 +79,9 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 
 	// return created user
 	return RegisterResponse{createdUser}, nil
+}
+
+func hashPassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+
 }
