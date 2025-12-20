@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"game_app/entity"
 	"game_app/repository/mysql"
+	"game_app/service/authservice"
 	"game_app/service/userservice"
 	"io"
 	"net/http"
+	"time"
 )
 
 const (
@@ -50,8 +51,15 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	authSvc := authservice.New(
+		JwtSignKey,
+		"at",
+		"rt",
+		time.Hour*24,
+		time.Hour*24*7)
+
 	mysqlRepo := mysql.New()
-	userSvc := userservice.NewService(mysqlRepo, JwtSignKey)
+	userSvc := userservice.New(mysqlRepo, authSvc)
 
 	_, rErr := userSvc.Register(uReq)
 
@@ -87,8 +95,15 @@ func userLoginHandler(writer http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	authSvc := authservice.New(
+		JwtSignKey,
+		"at",
+		"rt",
+		time.Hour*24,
+		time.Hour*24*7)
+
 	mysqlRepo := mysql.New()
-	userSvc := userservice.NewService(mysqlRepo, JwtSignKey)
+	userSvc := userservice.New(mysqlRepo, authSvc)
 
 	res, rErr := userSvc.Login(uReq)
 
@@ -122,26 +137,24 @@ func userProfileHandler(writer http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	//token := req.Header.Get("Authorization")
-	// validate jwt token and retrieve userID from payload
+	authSvc := authservice.New(
+		JwtSignKey,
+		"at",
+		"rt",
+		time.Hour*24,
+		time.Hour*24*7)
 
-	data, err := io.ReadAll(req.Body)
+	auth := req.Header.Get("Authorization")
+	claims, err := authSvc.ParseToken(auth)
+
 	if err != nil {
-		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
-	}
-	pReq := userservice.GetProfileRequest{}
-	uErr := json.Unmarshal(data, &pReq)
-	if uErr != nil {
-		_, wErr := writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, uErr.Error())))
-		if wErr != nil {
-			return
-		}
+		fmt.Fprintf(writer, `{"error": "token is not valid"}`)
 	}
 
 	mysqlRepo := mysql.New()
-	userSvc := userservice.NewService(mysqlRepo, JwtSignKey)
+	userSvc := userservice.New(mysqlRepo, authSvc)
 
-	res, rErr := userSvc.GetProfile(pReq)
+	res, rErr := userSvc.GetProfile(userservice.GetProfileRequest{UserID: claims.UserID})
 
 	if rErr != nil {
 		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, rErr.Error())))
@@ -156,28 +169,4 @@ func userProfileHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	writer.Write(jsonData)
-}
-
-func testUserMySqlRepo() {
-
-	mysqlRepo := mysql.New()
-	user, err := mysqlRepo.Register(entity.User{
-		ID:          0,
-		Name:        "fardinKeshavarz",
-		PhoneNumber: "09373068746",
-	})
-	if err != nil {
-		return
-	}
-
-	fmt.Println(user)
-
-	isUnique, uErr := mysqlRepo.IsPhoneNumberUnique(user.PhoneNumber)
-
-	if uErr != nil {
-		fmt.Println(uErr)
-	} else {
-		fmt.Println("phone_number is unique:", isUnique)
-	}
-
 }

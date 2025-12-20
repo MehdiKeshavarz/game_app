@@ -4,12 +4,8 @@ import (
 	"fmt"
 	"game_app/entity"
 	"game_app/pkg/phonenumber"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-
-	_ "github.com/golang-jwt/jwt/v5"
 )
 
 type Repository interface {
@@ -19,22 +15,27 @@ type Repository interface {
 	GetUserByID(userID uint) (entity.User, error)
 }
 
+type AuthService interface {
+	CreateAccessToken(user entity.User) (string, error)
+	CreateRefreshToken(user entity.User) (string, error)
+}
+
 type Service struct {
-	repo    Repository
-	signKey string
+	auth AuthService
+	repo Repository
+}
+
+func New(repo Repository, auth AuthService) Service {
+	return Service{
+		repo: repo,
+		auth: auth,
+	}
 }
 
 type RegisterRequest struct {
 	Name        string `json:"name"`
 	PhoneNumber string `json:"phone_number"`
 	Password    string `json:"password"`
-}
-
-func NewService(repo Repository, signKey string) Service {
-	return Service{
-		repo:    repo,
-		signKey: signKey,
-	}
 }
 
 type RegisterResponse struct {
@@ -79,7 +80,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		ID:          0,
 		Name:        req.Name,
 		PhoneNumber: req.PhoneNumber,
-		Password:    string(hashedPassword),
+		Password:    hashedPassword,
 	}
 
 	createdUser, err := s.repo.Register(user)
@@ -97,7 +98,8 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -116,13 +118,16 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("username or password is't correct")
 	}
 
-	// jwt token generate
-	token, err := creatToken(user.ID, s.signKey)
+	accessToken, err := s.auth.CreateAccessToken(user)
 	if err != nil {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 
-	return LoginResponse{AccessToken: token}, nil
+	refreshToken, err := s.auth.CreateRefreshToken(user)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+	return LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 
 }
 
@@ -149,35 +154,4 @@ func hashPassword(password string) (string, error) {
 	hashedPass, hErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 
 	return string(hashedPass), hErr
-}
-
-type Claims struct {
-	jwt.RegisteredClaims
-	UserID uint
-}
-
-func (c Claims) Valid() error {
-	return nil
-}
-
-func creatToken(userID uint, signKey string) (string, error) {
-	// set our claims
-	claims := &Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			// set the expire time
-			// see https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
-		},
-		UserID: userID,
-	}
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := accessToken.SignedString([]byte(signKey))
-
-	// Creat token string
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-
 }
