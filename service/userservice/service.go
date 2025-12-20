@@ -4,18 +4,24 @@ import (
 	"fmt"
 	"game_app/entity"
 	"game_app/pkg/phonenumber"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "github.com/golang-jwt/jwt/v5"
 )
 
 type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	Register(user entity.User) (entity.User, error)
 	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
+	GetUserByID(userID uint) (entity.User, error)
 }
 
 type Service struct {
-	repo Repository
+	repo    Repository
+	signKey string
 }
 
 type RegisterRequest struct {
@@ -24,8 +30,11 @@ type RegisterRequest struct {
 	Password    string `json:"password"`
 }
 
-func NewService(repo Repository) Service {
-	return Service{repo: repo}
+func NewService(repo Repository, signKey string) Service {
+	return Service{
+		repo:    repo,
+		signKey: signKey,
+	}
 }
 
 type RegisterResponse struct {
@@ -87,7 +96,9 @@ type LoginRequest struct {
 	Password    string `json:"password"`
 }
 
-type LoginResponse struct{}
+type LoginResponse struct {
+	AccessToken string `json:"access_token"`
+}
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
@@ -105,12 +116,68 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("username or password is't correct")
 	}
 
-	return LoginResponse{}, nil
+	// jwt token generate
+	token, err := creatToken(user.ID, s.signKey)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
 
+	return LoginResponse{AccessToken: token}, nil
+
+}
+
+type GetProfileRequest struct {
+	UserID uint `json:"user_id"`
+}
+type GetProfileResponse struct {
+	Name string `json:"name"`
+}
+
+func (s Service) GetProfile(req GetProfileRequest) (GetProfileResponse, error) {
+	// I don't expect the repository call return "record not found " error,
+	// because I assume the interactor input is sanitized.
+
+	user, err := s.repo.GetUserByID(req.UserID)
+	if err != nil {
+		return GetProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+
+	return GetProfileResponse{user.Name}, nil
 }
 
 func hashPassword(password string) (string, error) {
 	hashedPass, hErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 
 	return string(hashedPass), hErr
+}
+
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID uint
+}
+
+func (c Claims) Valid() error {
+	return nil
+}
+
+func creatToken(userID uint, signKey string) (string, error) {
+	// set our claims
+	claims := &Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			// set the expire time
+			// see https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+		},
+		UserID: userID,
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := accessToken.SignedString([]byte(signKey))
+
+	// Creat token string
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+
 }

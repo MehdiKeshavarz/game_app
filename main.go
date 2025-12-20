@@ -10,11 +10,16 @@ import (
 	"net/http"
 )
 
+const (
+	JwtSignKey = "jwt_secret"
+)
+
 func main() {
 
+	http.HandleFunc("/health-check", healthCheckHandler)
 	http.HandleFunc("/users/register", userRegisterHandler)
 	http.HandleFunc("/users/login", userLoginHandler)
-	http.HandleFunc("/health-check", healthCheckHandler)
+	http.HandleFunc("/users/profile", userProfileHandler)
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
@@ -46,7 +51,7 @@ func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	mysqlRepo := mysql.New()
-	userSvc := userservice.NewService(mysqlRepo)
+	userSvc := userservice.NewService(mysqlRepo, JwtSignKey)
 
 	_, rErr := userSvc.Register(uReq)
 
@@ -83,9 +88,9 @@ func userLoginHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	mysqlRepo := mysql.New()
-	userSvc := userservice.NewService(mysqlRepo)
+	userSvc := userservice.NewService(mysqlRepo, JwtSignKey)
 
-	_, rErr := userSvc.Login(uReq)
+	res, rErr := userSvc.Login(uReq)
 
 	if rErr != nil {
 		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, rErr.Error())))
@@ -93,7 +98,13 @@ func userLoginHandler(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writer.Write([]byte(`{"message": "user login"}`))
+	jsonData, jErr := json.Marshal(res)
+
+	if jErr != nil {
+		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, jErr.Error())))
+	}
+
+	writer.Write(jsonData)
 }
 
 func healthCheckHandler(writer http.ResponseWriter, req *http.Request) {
@@ -101,6 +112,50 @@ func healthCheckHandler(writer http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		return
 	}
+}
+
+func userProfileHandler(writer http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		_, err := fmt.Fprintf(writer, `{"error": "invalid http method"'}`)
+		if err != nil {
+			return
+		}
+	}
+
+	//token := req.Header.Get("Authorization")
+	// validate jwt token and retrieve userID from payload
+
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+	}
+	pReq := userservice.GetProfileRequest{}
+	uErr := json.Unmarshal(data, &pReq)
+	if uErr != nil {
+		_, wErr := writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, uErr.Error())))
+		if wErr != nil {
+			return
+		}
+	}
+
+	mysqlRepo := mysql.New()
+	userSvc := userservice.NewService(mysqlRepo, JwtSignKey)
+
+	res, rErr := userSvc.GetProfile(pReq)
+
+	if rErr != nil {
+		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, rErr.Error())))
+
+		return
+	}
+
+	jsonData, jErr := json.Marshal(res)
+
+	if jErr != nil {
+		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, jErr.Error())))
+	}
+
+	writer.Write(jsonData)
 }
 
 func testUserMySqlRepo() {
