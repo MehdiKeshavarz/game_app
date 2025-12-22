@@ -9,37 +9,36 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type Service struct {
-	signKey               string
-	accessExpirationTime  time.Duration
-	refreshExpirationTime time.Duration
-	accessSubject         string
-	refreshSubject        string
+type Config struct {
+	SignKey               string
+	AccessExpirationTime  time.Duration
+	RefreshExpirationTime time.Duration
+	AccessSubject         string
+	RefreshSubject        string
 }
 
-func New(signKey, accessSubject, refreshSubject string,
-	accessExpirationTime, refreshExpirationTime time.Duration) Service {
+type Service struct {
+	config Config
+}
+
+func New(config Config) Service {
 	return Service{
-		signKey:               signKey,
-		accessExpirationTime:  accessExpirationTime,
-		refreshExpirationTime: refreshExpirationTime,
-		accessSubject:         accessSubject,
-		refreshSubject:        refreshSubject,
+		config: config,
 	}
 }
 
 func (s Service) CreateAccessToken(user entity.User) (string, error) {
-	return s.creatToken(user.ID, s.accessSubject, time.Hour*24)
+	return s.creatToken(user.ID, s.config.AccessSubject, time.Hour*24)
 }
 func (s Service) CreateRefreshToken(user entity.User) (string, error) {
-	return s.creatToken(user.ID, s.refreshSubject, time.Hour*7*24)
+	return s.creatToken(user.ID, s.config.RefreshSubject, time.Hour*7*24)
 }
 
 func (s Service) ParseToken(tokenStr string) (*Claims, error) {
 	tokenStr = strings.Replace(tokenStr, "Bearer ", "", 1)
 
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(s.signKey), nil
+		return []byte(s.config.SignKey), nil
 	})
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
@@ -60,7 +59,7 @@ func (s Service) creatToken(userID uint, subject string, expireDuration time.Dur
 		UserID: userID,
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := accessToken.SignedString([]byte(s.signKey))
+	tokenString, err := accessToken.SignedString([]byte(s.config.SignKey))
 
 	if err != nil {
 		return "", err
