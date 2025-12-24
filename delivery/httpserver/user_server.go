@@ -42,7 +42,6 @@ func (s Server) userLogin(c echo.Context) error {
 func (s Server) userProfile(c echo.Context) error {
 	auth := c.Request().Header.Get("Authorization")
 	claims, err := s.authSvc.ParseToken(auth)
-
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -50,7 +49,7 @@ func (s Server) userProfile(c echo.Context) error {
 	res, rErr := s.userSvc.GetProfile(userservice.GetProfileRequest{UserID: claims.UserID})
 
 	if rErr != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, rErr.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, rErr.Error())
 	}
 
 	return c.JSON(http.StatusOK, res)
