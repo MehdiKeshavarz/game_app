@@ -6,6 +6,7 @@ import (
 	"game_app/repository/mysql"
 	"game_app/service/authservice"
 	"game_app/service/userservice"
+	"game_app/validator/uservalidator"
 	"time"
 )
 
@@ -36,17 +37,18 @@ func main() {
 	//	mgr := migrator.New(cfg.Mysql, "mysql")
 	//	mgr.Up()
 
-	authSvc, userSvc := setupServices(cfg)
+	authSvc, userSvc, userValidator := setupServices(cfg)
 
-	server := httpserver.New(cfg, authSvc, userSvc)
+	server := httpserver.New(cfg, authSvc, userSvc, userValidator)
 
 	server.Serve()
 }
 
-func setupServices(cfg config.Config) (authservice.Service, userservice.Service) {
+func setupServices(cfg config.Config) (authservice.Service, userservice.Service, uservalidator.Validator) {
 	authSvc := authservice.New(cfg.AuthConfig)
 	mysqlRepo := mysql.New(cfg.Mysql)
+	userValidator := uservalidator.New(mysqlRepo)
 	userSvc := userservice.New(mysqlRepo, authSvc)
 
-	return authSvc, userSvc
+	return authSvc, userSvc, userValidator
 }
