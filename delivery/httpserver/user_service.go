@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"game_app/pkg/httpmsg"
 	"game_app/service/userservice"
 	"net/http"
 
@@ -49,7 +50,8 @@ func (s Server) userProfile(c echo.Context) error {
 	res, rErr := s.userSvc.GetProfile(userservice.GetProfileRequest{UserID: claims.UserID})
 
 	if rErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, rErr.Error())
+		code, msg := httpmsg.Error(rErr)
+		return echo.NewHTTPError(code, msg)
 	}
 
 	return c.JSON(http.StatusOK, res)

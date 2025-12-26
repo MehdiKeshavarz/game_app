@@ -3,7 +3,6 @@ package main
 import (
 	"game_app/config"
 	"game_app/delivery/httpserver"
-	"game_app/repository/migrator"
 	"game_app/repository/mysql"
 	"game_app/service/authservice"
 	"game_app/service/userservice"
@@ -34,8 +33,8 @@ func main() {
 		},
 	}
 
-	mgr := migrator.New(cfg.Mysql, "mysql")
-	mgr.Up()
+	//	mgr := migrator.New(cfg.Mysql, "mysql")
+	//	mgr.Up()
 
 	authSvc, userSvc := setupServices(cfg)
 

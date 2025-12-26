@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_app/entity"
 	"game_app/pkg/phonenumber"
+	"game_app/pkg/richerror"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -92,14 +93,6 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 
-	//var resp RegisterResponse
-	//resp.User.ID = createdUser.ID
-	//resp.User.Name = createdUser.Name
-	//resp.User.PhoneNumber = createdUser.PhoneNumber
-	//
-	//
-	//return resp, nil
-
 	return RegisterResponse{
 		User: struct {
 			ID          uint   `json:"id"`
@@ -120,15 +113,14 @@ type LoginResponse struct {
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
+	const op = "userservice.Login"
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
-		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return LoginResponse{}, richerror.New(op).SetWrappedError(err)
 	}
 	if !exist {
 		return LoginResponse{}, fmt.Errorf("username or password is't correct")
 	}
-
-	// compare  user.password with the req.password
 
 	cErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if cErr != nil {
@@ -156,12 +148,15 @@ type GetProfileResponse struct {
 }
 
 func (s Service) GetProfile(req GetProfileRequest) (GetProfileResponse, error) {
+	const op = "userservice.GetProfile"
 	// I don't expect the repository call return "record not found " error,
 	// because I assume the interactor input is sanitized.
 
 	user, err := s.repo.GetUserByID(req.UserID)
 	if err != nil {
-		return GetProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return GetProfileResponse{}, richerror.New(op).
+			SetWrappedError(err).
+			SetMeta(map[string]interface{}{"req": req})
 	}
 
 	return GetProfileResponse{user.Name}, nil

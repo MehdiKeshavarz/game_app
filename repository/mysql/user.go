@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"game_app/entity"
+	"game_app/pkg/errmsg"
+	"game_app/pkg/richerror"
 )
 
 func (d Mysqldb) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
@@ -37,16 +39,22 @@ func (d Mysqldb) Register(user entity.User) (entity.User, error) {
 }
 
 func (d Mysqldb) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error) {
-
+	const op = "mysql.GetUserByPhoneNumber"
 	row := d.db.QueryRow(`select * from users where phone_number = ? `, phoneNumber)
 
 	user, err := scanUser(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entity.User{}, false, nil
+			return entity.User{}, false, richerror.New(op).
+				SetWrappedError(err).
+				SetMessage(errmsg.ErrorMsgNotFound).
+				SetKind(richerror.KindNotFound)
 		}
 
-		return entity.User{}, false, fmt.Errorf("can't scan query result: %w", err)
+		return entity.User{}, false, richerror.New(op).
+			SetWrappedError(err).
+			SetMessage(errmsg.ErrorMsgCantScanQueryResult).
+			SetKind(richerror.KindUnexpected)
 	}
 
 	return user, true, nil
@@ -54,15 +62,21 @@ func (d Mysqldb) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, er
 }
 
 func (d Mysqldb) GetUserByID(userID uint) (entity.User, error) {
+	const op = "mysql.GetUserByID"
 	row := d.db.QueryRow(`select * from users where id = ? `, userID)
 
 	user, err := scanUser(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entity.User{}, fmt.Errorf("record not found")
+			return entity.User{}, richerror.New(op).
+				SetWrappedError(err).
+				SetMessage(errmsg.ErrorMsgNotFound).
+				SetKind(richerror.KindNotFound)
 		}
-
-		return entity.User{}, fmt.Errorf("can't scan query result: %w", err)
+		return entity.User{}, richerror.New(op).
+			SetWrappedError(err).
+			SetMessage(errmsg.ErrorMsgCantScanQueryResult).
+			SetKind(richerror.KindUnexpected)
 	}
 
 	return user, nil
