@@ -10,12 +10,9 @@ import (
 
 func (s Service) Login(req dto.LoginRequest) (dto.LoginResponse, error) {
 	const op = "userservice.Login"
-	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
+	user, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
 		return dto.LoginResponse{}, richerror.New(op).SetWrappedError(err)
-	}
-	if !exist {
-		return dto.LoginResponse{}, fmt.Errorf("username or password is't correct")
 	}
 
 	cErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))

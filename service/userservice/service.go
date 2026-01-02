@@ -6,7 +6,7 @@ import (
 
 type Repository interface {
 	Register(user entity.User) (entity.User, error)
-	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
+	GetUserByPhoneNumber(phoneNumber string) (entity.User, error)
 	GetUserByID(userID uint) (entity.User, error)
 }
 
