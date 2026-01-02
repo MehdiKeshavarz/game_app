@@ -22,7 +22,7 @@ func (s Server) userRegister(c echo.Context) error {
 			"message": msg,
 			"error":   filedErrors,
 		})
-		
+
 	}
 
 	res, err := s.userSvc.Register(req)
@@ -57,7 +57,7 @@ func (s Server) userProfile(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
-	res, rErr := s.userSvc.GetProfile(dto.GetProfileRequest{UserID: claims.UserID})
+	res, rErr := s.userSvc.Profile(dto.GetProfileRequest{UserID: claims.UserID})
 
 	if rErr != nil {
 		code, msg := httpmsg.Error(rErr)
