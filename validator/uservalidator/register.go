@@ -3,7 +3,7 @@ package uservalidator
 import (
 	"errors"
 	"fmt"
-	"game_app/dto"
+	"game_app/param"
 	"game_app/pkg/errmsg"
 	"game_app/pkg/richerror"
 	"regexp"
@@ -11,12 +11,12 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-func (v Validator) ValidateRegisterRequest(req dto.RegisterRequest) (error, map[string]string) {
+func (v Validator) ValidateRegisterRequest(req param.RegisterRequest) (error, map[string]string) {
 	const op = "uservalidator.ValidateRegisterRequest"
 
 	if err := validation.ValidateStruct(&req,
 		validation.Field(&req.Name, validation.Required, validation.Length(3, 50)),
-		
+
 		validation.Field(&req.Password,
 			validation.Required,
 			validation.Match(regexp.MustCompile(`^[A-Za-z0-9!@#$%&*]{8,}$`)).
