@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"game_app/config"
 	"game_app/delivery/httpserver"
 	"game_app/repository/mysql"
@@ -15,10 +16,11 @@ const (
 )
 
 func main() {
-
+	cfg2 := config.Load()
+	fmt.Printf("cfg2 : %v\n", cfg2)
 	cfg := config.Config{
 		HttpServer: config.HTTPServer{Port: 8088},
-		AuthConfig: authservice.Config{
+		Auth: authservice.Config{
 			SignKey:               JwtSignKey,
 			AccessExpirationTime:  time.Hour * 24,
 			RefreshExpirationTime: time.Hour * 24 * 7,
@@ -45,7 +47,7 @@ func main() {
 }
 
 func setupServices(cfg config.Config) (authservice.Service, userservice.Service, uservalidator.Validator) {
-	authSvc := authservice.New(cfg.AuthConfig)
+	authSvc := authservice.New(cfg.Auth)
 	mysqlRepo := mysql.New(cfg.Mysql)
 	userValidator := uservalidator.New(mysqlRepo)
 	userSvc := userservice.New(mysqlRepo, authSvc)
