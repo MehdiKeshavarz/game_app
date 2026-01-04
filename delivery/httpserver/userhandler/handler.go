@@ -2,6 +2,7 @@ package userhandler
 
 import (
 	"game_app/param"
+	"game_app/pkg/constant"
 	"game_app/pkg/httpmsg"
 	"game_app/service/authservice"
 	"game_app/service/userservice"
@@ -15,13 +16,18 @@ type Handler struct {
 	authSvc       authservice.Service
 	userSvc       userservice.Service
 	userValidator uservalidator.Validator
+	authConfig    authservice.Config
 }
 
-func New(authSvc authservice.Service, userSvc userservice.Service, userValidator uservalidator.Validator) Handler {
+func New(authSvc authservice.Service,
+	userSvc userservice.Service,
+	userValidator uservalidator.Validator,
+	authConfig authservice.Config) Handler {
 	return Handler{
 		authSvc:       authSvc,
 		userSvc:       userSvc,
 		userValidator: userValidator,
+		authConfig:    authConfig,
 	}
 }
 
@@ -76,13 +82,13 @@ func (h Handler) userLogin(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (h Handler) userProfile(c echo.Context) error {
-	auth := c.Request().Header.Get("Authorization")
+func getClaims(c echo.Context) *authservice.Claims {
+	// let it crash
+	return c.Get(constant.AuthMiddlewareContextKey).(*authservice.Claims)
+}
 
-	claims, err := h.authSvc.ParseToken(auth)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
+func (h Handler) userProfile(c echo.Context) error {
+	claims := getClaims(c)
 
 	res, rErr := h.userSvc.Profile(param.GetProfileRequest{UserID: claims.UserID})
 
