@@ -35,16 +35,17 @@ func Load() *Config {
 			k = strings.ReplaceAll(
 				strings.ToLower(
 					strings.TrimPrefix(k, "GAMEAPP_")), "_", ".")
-
-			// Transform the value into slices, if they contain spaces.
-			// Eg:_TAGS="foo bar baz" -> tags: ["foo", "bar", "baz"]
-			// This is to demonstrate that string values can be transformed to any type
-			// where necessary.
+			// GAMEAPP_AUTH_SIGN__KEY
+			// AUTH_SIGN_KEY
+			// auth_sign__key
+			// auth.sign..key
+			str := strings.Replace(k, "..", "_", -1)
+			// atun.sign_key
 			if strings.Contains(v, " ") {
 				return k, strings.Split(v, " ")
 			}
 
-			return k, v
+			return str, v
 		},
 	}), nil)
 	if eErr != nil {
