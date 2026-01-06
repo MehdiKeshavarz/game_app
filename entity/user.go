@@ -6,4 +6,5 @@ type User struct {
 	PhoneNumber string
 	// password always keep hashed password.
 	Password string
+	Role     Role
 }

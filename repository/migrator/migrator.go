@@ -23,14 +23,15 @@ func New(dbConfig mysql.Config, dialect string) Migrator {
 }
 
 func (m Migrator) Up() {
-	db, err := sql.Open(m.dialect, fmt.Sprintf("%s:%s@(%s:%d)/%s?parseTime=true ",
+	db, err := sql.Open(m.dialect, fmt.Sprintf("%s:%s@(%s:%d)/%s?parseTime=true",
 		m.dbConfig.Username,
 		m.dbConfig.Password,
 		m.dbConfig.Host,
 		m.dbConfig.Port,
 		m.dbConfig.DBName))
 	if err != nil {
-		panic(fmt.Errorf("can't open db connection: %v", err))
+		fmt.Println(err)
+		panic(fmt.Errorf("can't open db : %v", err))
 	}
 
 	n, err := migrate.Exec(db, m.dialect, m.migrations, migrate.Up)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_app/config"
 	"game_app/delivery/httpserver"
+	"game_app/repository/migrator"
 	"game_app/repository/mysql"
 	"game_app/service/authservice"
 	"game_app/service/userservice"
@@ -18,6 +19,7 @@ const (
 func main() {
 	cfg2 := config.Load()
 	fmt.Printf("cfg2 : %v\n", cfg2)
+	// TODO marge cfg with cfg2
 	cfg := config.Config{
 		HttpServer: config.HTTPServer{Port: 8088},
 		Auth: authservice.Config{
@@ -36,8 +38,8 @@ func main() {
 		},
 	}
 
-	//	mgr := migrator.New(cfg.Mysql, "mysql")
-	//	mgr.Up()
+	mgr := migrator.New(cfg.Mysql, "mysql")
+	mgr.Up()
 
 	authSvc, userSvc, userValidator := setupServices(cfg)
 

@@ -7,4 +7,6 @@ mysql:
   host: localhost
   port: 3308
   db_name: gameapp_db
+  username: gameapp
+  password: gameappt0lk2o20
 
