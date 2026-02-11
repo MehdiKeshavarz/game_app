@@ -32,9 +32,7 @@ func Load() *Config {
 		Prefix: "GAMEAPP_",
 		TransformFunc: func(k, v string) (string, any) {
 			// Transform the key.
-			k = strings.ReplaceAll(
-				strings.ToLower(
-					strings.TrimPrefix(k, "GAMEAPP_")), "_", ".")
+			k = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(k, "GAMEAPP_")), "_", ".")
 			// GAMEAPP_AUTH_SIGN__KEY
 			// AUTH_SIGN_KEY
 			// auth_sign__key

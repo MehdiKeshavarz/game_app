@@ -28,10 +28,10 @@ func New(config Config) Service {
 }
 
 func (s Service) CreateAccessToken(user entity.User) (string, error) {
-	return s.creatToken(user.ID, s.config.AccessSubject, time.Hour*24)
+	return s.creatToken(user.ID, user.Role, s.config.AccessSubject, time.Hour*24)
 }
 func (s Service) CreateRefreshToken(user entity.User) (string, error) {
-	return s.creatToken(user.ID, s.config.RefreshSubject, time.Hour*7*24)
+	return s.creatToken(user.ID, user.Role, s.config.RefreshSubject, time.Hour*7*24)
 }
 
 func (s Service) ParseToken(tokenStr string) (*Claims, error) {
@@ -49,7 +49,7 @@ func (s Service) ParseToken(tokenStr string) (*Claims, error) {
 	}
 }
 
-func (s Service) creatToken(userID uint, subject string, expireDuration time.Duration) (string, error) {
+func (s Service) creatToken(userID uint, role entity.Role, subject string, expireDuration time.Duration) (string, error) {
 	// set our claims
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -57,6 +57,7 @@ func (s Service) creatToken(userID uint, subject string, expireDuration time.Dur
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expireDuration)),
 		},
 		UserID: userID,
+		Role:   role,
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := accessToken.SignedString([]byte(s.config.SignKey))
