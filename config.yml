@@ -1,7 +1,10 @@
 ---
 type: yml
 auth:
-  sign_key: hello
+  sign_key: jwt_secret
+
+http_server:
+  port: 8088
 
 mysql:
   host: localhost
@@ -9,4 +12,11 @@ mysql:
   db_name: gameapp_db
   username: gameapp
   password: gameappt0lk2o20
+redis:
+  host: localhost
+  port: 6380
+  password: ""
+  db: 0
+matching_service:
+  waitingTimeOut: "2m"
 

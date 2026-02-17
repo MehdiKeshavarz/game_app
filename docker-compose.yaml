@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
   gameapp-database:
     image: mysql:8.0
@@ -17,7 +15,16 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-
+  radis-db:
+    image: redis:6.2-alpine
+    restart: always
+    container_name: radis-db
+    ports:
+      - '6380:6379'
+    command: redis-server --loglevel warning
+    volumes:
+      - radis-db:/data
 
 volumes:
   dbdata:
+  radis-db:

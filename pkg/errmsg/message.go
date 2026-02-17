@@ -8,4 +8,5 @@ const (
 	ErrorMsgInvalidInput           = "invalid input"
 	ErrorSomethingWentWrong        = "something went wrong"
 	ErrorAccessDenied              = "user not allowed"
+	ErrorMsgCategoryIsNotValid     = "category is not valid"
 )

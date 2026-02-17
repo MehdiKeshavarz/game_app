@@ -10,7 +10,7 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-func Load() *Config {
+func Load() Config {
 
 	var k = koanf.New(".")
 
@@ -19,13 +19,13 @@ func Load() *Config {
 	// A nested map can be loaded by setting the delimiter to an empty string "".
 	err := k.Load(confmap.Provider(defaultConfig, "."), nil)
 	if err != nil {
-		return nil
+		return Config{}
 	}
 
 	// Load YAML config and merge into the previously loaded config (because we can).
 	yErr := k.Load(file.Provider("config.yml"), yaml.Parser())
 	if yErr != nil {
-		return nil
+		return Config{}
 	}
 
 	eErr := k.Load(env.Provider(".", env.Opt{
@@ -47,7 +47,7 @@ func Load() *Config {
 		},
 	}), nil)
 	if eErr != nil {
-		return nil
+		return Config{}
 	}
 
 	var cfg Config
@@ -56,6 +56,6 @@ func Load() *Config {
 		panic(uErr)
 	}
 
-	return &cfg
+	return cfg
 
 }
