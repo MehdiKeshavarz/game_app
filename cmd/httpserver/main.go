@@ -10,7 +10,6 @@ import (
 	"game_app/repository/mysql/accesscontrol"
 	"game_app/repository/mysql/user"
 	"game_app/repository/redis/matching"
-	"game_app/scheduler"
 	"game_app/service/authorizationservice"
 	"game_app/service/authservice"
 	"game_app/service/backofficeuserservice"
@@ -22,10 +21,6 @@ import (
 	"os/signal"
 )
 
-const (
-	JwtSignKey = "jwt_secret"
-)
-
 func main() {
 	cfg := config.Load()
 
@@ -33,7 +28,6 @@ func main() {
 	//mgr.Up()
 
 	authSvc, userSvc, userValidator, authorizationSvc, backofficeUserSvc, matchingSvc, matchingValidator := setupServices(cfg)
-
 	server := httpserver.New(cfg,
 		authSvc,
 		userSvc,
@@ -46,14 +40,6 @@ func main() {
 	go func() {
 		server.Serve()
 	}()
-
-	done := make(chan bool)
-
-	go func() {
-		sch := scheduler.New()
-		sch.Start(done)
-	}()
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
@@ -65,7 +51,6 @@ func main() {
 		fmt.Println("shutdown http server error:", err)
 	}
 	fmt.Println("received signal interrupt . shutting down gracefully...")
-	done <- true
 
 	<-ctxWithTimeout.Done()
 }

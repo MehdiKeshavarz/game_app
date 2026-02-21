@@ -23,6 +23,7 @@ type Server struct {
 	userHandler           userhandler.Handler
 	backofficeUserHandler backofficeuserhandler.Handler
 	matchingHandler       matchinghandler.Handler
+	Router                *echo.Echo
 }
 
 func New(config config.Config,
@@ -34,6 +35,7 @@ func New(config config.Config,
 	matchingService matchingservice.Service,
 	matchingValidator matchingvalidator.Validator) Server {
 	return Server{
+		Router:                echo.New(),
 		config:                config,
 		userHandler:           userhandler.New(authSvc, userSvc, userValidator, config.Auth),
 		backofficeUserHandler: backofficeuserhandler.New(backofficeService, authSvc, config.Auth, authorizationSvc),
@@ -42,14 +44,13 @@ func New(config config.Config,
 }
 
 func (s Server) Serve() {
-	e := echo.New()
-	e.Use(middleware.RequestLogger())
-	e.Use(middleware.Recover())
+	s.Router.Use(middleware.RequestLogger())
+	s.Router.Use(middleware.Recover())
 
-	e.GET("/health-check", s.healthCheck)
-	s.userHandler.SetRoutes(e)
-	s.backofficeUserHandler.SetRoutes(e)
-	s.matchingHandler.SetRoutes(e)
+	s.Router.GET("/health-check", s.healthCheck)
+	s.userHandler.SetRoutes(s.Router)
+	s.backofficeUserHandler.SetRoutes(s.Router)
+	s.matchingHandler.SetRoutes(s.Router)
 
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", s.config.HttpServer.Port)))
+	s.Router.Logger.Fatal(s.Router.Start(fmt.Sprintf(":%d", s.config.HttpServer.Port)))
 }
