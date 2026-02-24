@@ -20,6 +20,7 @@ import (
 	"game_app/validator/uservalidator"
 	"os"
 	"os/signal"
+	"sync"
 )
 
 const (
@@ -48,10 +49,11 @@ func main() {
 	}()
 
 	done := make(chan bool)
-
+	var wg sync.WaitGroup
 	go func() {
-		sch := scheduler.New()
-		sch.Start(done)
+		sch := scheduler.New(matchingSvc)
+		wg.Add(1)
+		sch.Start(done, &wg)
 	}()
 
 	quit := make(chan os.Signal, 1)
@@ -68,6 +70,8 @@ func main() {
 	done <- true
 
 	<-ctxWithTimeout.Done()
+
+	wg.Wait()
 }
 
 func setupServices(cfg config.Config) (authservice.Service, userservice.Service, uservalidator.Validator, authorizationservice.Service, backofficeuserservice.Service, matchingservice.Service, matchingvalidator.Validator) {

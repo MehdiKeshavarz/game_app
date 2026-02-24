@@ -52,5 +52,7 @@ func (s Server) Serve() {
 	s.backofficeUserHandler.SetRoutes(s.Router)
 	s.matchingHandler.SetRoutes(s.Router)
 
-	s.Router.Logger.Fatal(s.Router.Start(fmt.Sprintf(":%d", s.config.HttpServer.Port)))
+	if err := s.Router.Start(fmt.Sprintf(":%d", s.config.HttpServer.Port)); err != nil {
+		fmt.Println("http server start error:", err)
+	}
 }
