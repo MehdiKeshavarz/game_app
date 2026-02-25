@@ -5,6 +5,7 @@ import (
 	"game_app/pkg/claim"
 	"game_app/pkg/httpmsg"
 	"game_app/service/authservice"
+	"game_app/service/presenceservice"
 	"game_app/service/userservice"
 	"game_app/validator/uservalidator"
 	"net/http"
@@ -17,17 +18,20 @@ type Handler struct {
 	userSvc       userservice.Service
 	userValidator uservalidator.Validator
 	authConfig    authservice.Config
+	presenceSvc   presenceservice.Service
 }
 
 func New(authSvc authservice.Service,
 	userSvc userservice.Service,
 	userValidator uservalidator.Validator,
-	authConfig authservice.Config) Handler {
+	authConfig authservice.Config,
+	presenceSvc presenceservice.Service) Handler {
 	return Handler{
 		authSvc:       authSvc,
 		userSvc:       userSvc,
 		userValidator: userValidator,
 		authConfig:    authConfig,
+		presenceSvc:   presenceSvc,
 	}
 }
 

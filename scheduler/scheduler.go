@@ -29,7 +29,8 @@ func New(matchingSvc matchingservice.Service) Scheduler {
 func (s Scheduler) Start(done <-chan bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 	_, err := s.sch.NewJob(
-		gocron.DurationJob(5*time.Second),
+		// TODO - add to config
+		gocron.DurationJob(30*time.Second),
 		gocron.NewTask(
 			s.MatchWaitedUser,
 		),

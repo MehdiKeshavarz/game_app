@@ -19,4 +19,7 @@ redis:
   db: 0
 matching_service:
   waitingTimeOut: "2m"
+presence_service:
+  prefix: "presence"
+  expiration_time: "60m"
 
